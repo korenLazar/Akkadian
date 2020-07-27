@@ -124,21 +124,21 @@ def calc_sentences():
             json_to_csv(sents_counter_by_project[proj_data], os.path.join(outdir, f"sentences_{proj_data}.csv"))
 
 
-def calc_lines():
+def calc_words():
     words_counter_general, words_counter_by_project = dict(), dict()
 
-    for dir in os.listdir(JSONS_DIR):
-        words_counter_general[dir] = dict()
-        words_counter_by_project[dir] = dict()
-        for path in Path(os.path.join(JSONS_DIR, dir)).rglob('catalogue.json'):
-            if str(path) == "jsons_unzipped\cams\catalogue.json":  # multiple projects as subdirectories
+    for directory in os.listdir(JSONS_DIR):
+        words_counter_by_project[directory] = dict()
+        for path in Path(os.path.join(JSONS_DIR, directory)).rglob('catalogue.json'):
+            if str(path) == os.path.join(JSONS_DIR, "cams", "catalogue.json"):  # multiple projects as subdirectories
                 continue
-            d = load_json_to_dict(str(path))
-            if d and d.get('members'):
-                for member in d.get('members').values():
+            texts_json = load_json_to_dict(str(path))
+            if texts_json and texts_json.get('members'):
+                for member in texts_json.get('members').values():
                     id_text = member.get('id_text', "") + member.get('id_composite', "")
-                    if os.path.isfile(f'{path.parent}\\corpusjson\\{id_text}.json'):
-                        d = load_json_to_dict(f'{path.parent}\\corpusjson\\{id_text}.json')
+                    json_file_path = os.path.join(path.parent, "corpusjson", f'{id_text}.json')
+                    if os.path.isfile(json_file_path):
+                        d = load_json_to_dict(json_file_path)
                         try:
                             json_dict = d['cdl'][0]['cdl'][-1]['cdl'][0]['cdl']
                             num_of_words = calc_num_of_words(json_dict)
@@ -148,7 +148,7 @@ def calc_lines():
                             continue
                     else:
                         html_dir = "/".join(path.parts[1:-1])
-                        url = f"http://oracc.iaas.upenn.edu/{html_dir}/{id_text}/html"
+                        url = f'http://oracc.iaas.upenn.edu/{html_dir}/{id_text}/html'
                         # print(url)
                         res = requests.get(url)
                         soup = BeautifulSoup(res.text, "html.parser")
@@ -157,8 +157,8 @@ def calc_lines():
                     if num_of_words > 0:
                         lang, period = member.get('language', 'unspecified'), member.get('period', 'unspecified')
                         update_dict(words_counter_general, period, words_counter_general, num_of_words)
-                        update_dict(words_counter_general[dir], period, words_counter_general, num_of_words)
-                        print(dir, id_text)
+                        update_dict(words_counter_general[directory], period, words_counter_general, num_of_words)
+                        print(directory, id_text)
                         print(words_counter_general)
 
     outdir = './results'
